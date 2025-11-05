@@ -1,97 +1,64 @@
 /**
- * STEP 3: DrawArea Component - Split Lines Visualization
+ * STEP 4: Tablet Drawing Functionality
  *
- * This component displays horizontal and vertical split lines when the user
- * presses or drags on the screen. The lines appear at the touch point.
+ * Main component that orchestrates tablet drawing, rendering, and interaction.
+ * This component uses smaller, reusable components and hooks for better maintainability.
+ *
+ * Features:
+ * - Detect empty area touches (not on existing tablets)
+ * - Create tablets by dragging on empty areas
+ * - Show preview tablet while dragging
+ * - Enforce minimum tablet size (40x20 dpi)
+ * - Display split lines during press/drag
  */
 
-import React, { useState } from 'react';
-import { StyleSheet, View, Dimensions } from 'react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { StyleSheet, View } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
+import { useTablets } from '../context/TabletContext';
+import { Tablet } from './Tablet';
+import { PreviewTablet } from './PreviewTablet';
+import { DashedLine } from './DashedLine';
+import { useTabletDrawing } from '../hooks/useTabletDrawing';
 
 interface DrawAreaProps {
   // Future props will be added here
 }
 
-const DashedLine: React.FC<{
-  horizontal: boolean;
-  position: number;
-}> = ({ horizontal, position }) => {
-  const dashLength = 8;
-  const dashGap = 4;
-  const lineLength = horizontal ? SCREEN_WIDTH : SCREEN_HEIGHT;
-  const dashCount = Math.floor(lineLength / (dashLength + dashGap));
-
-  return (
-    <View
-      style={[
-        horizontal
-          ? styles.horizontalLineContainer
-          : styles.verticalLineContainer,
-        horizontal ? styles.horizontalPosition : styles.verticalPosition,
-        horizontal ? { top: position } : { left: position },
-      ]}
-    >
-      {Array.from({ length: dashCount }).map((_, index) => (
-        <View
-          key={index}
-          style={[
-            horizontal ? styles.horizontalDash : styles.verticalDash,
-            index > 0 &&
-              (horizontal
-                ? styles.horizontalDashMargin
-                : styles.verticalDashMargin),
-          ]}
-        />
-      ))}
-    </View>
-  );
-};
-
 export const DrawArea: React.FC<DrawAreaProps> = () => {
-  // State to track the current split line position
-  const [splitLines, setSplitLines] = useState<{
-    x?: number;
-    y?: number;
-  } | null>(null);
+  const { tablets } = useTablets();
+  const { gesture, splitLines, previewTablet, draggedTabletId } =
+    useTabletDrawing();
 
-  /**
-   * Gesture handler for press and drag events
-   * Shows split lines at the touch point
-   */
-  const gesture = Gesture.Pan()
-    .onStart(event => {
-      // Show split lines when user starts pressing
-      setSplitLines({
-        x: event.x,
-        y: event.y,
-      });
-    })
-    .onUpdate(event => {
-      // Update split lines position during drag
-      setSplitLines({
-        x: event.x,
-        y: event.y,
-      });
-    })
-    .onEnd(() => {
-      // Hide split lines after a short delay when user releases
-      setTimeout(() => {
-        setSplitLines(null);
-      }, 300);
-    })
-    .onFinalize(() => {
-      // Ensure lines are hidden when gesture ends
-      setTimeout(() => {
-        setSplitLines(null);
-      }, 300);
-    });
+  // Sort tablets so the dragged one renders on top
+  const sortedTablets = [...tablets].sort((a, b) => {
+    if (a.id === draggedTabletId) return 1; // Dragged tablet goes to end (top)
+    if (b.id === draggedTabletId) return -1;
+    return 0; // Keep original order for others
+  });
 
   return (
     <GestureDetector gesture={gesture}>
       <View style={styles.drawArea}>
+        {/* Render existing tablets */}
+        {sortedTablets.map(tablet => (
+          <Tablet
+            key={tablet.id}
+            tablet={tablet}
+            isDragging={tablet.id === draggedTabletId}
+          />
+        ))}
+
+        {/* Render preview tablet while drawing */}
+        {previewTablet && (
+          <PreviewTablet
+            x={previewTablet.x}
+            y={previewTablet.y}
+            width={previewTablet.width}
+            height={previewTablet.height}
+          />
+        )}
+
+        {/* Render split lines */}
         {splitLines?.y !== undefined && (
           <DashedLine horizontal={true} position={splitLines.y} />
         )}
@@ -109,39 +76,5 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
     backgroundColor: '#ffffff',
-  },
-  horizontalLineContainer: {
-    position: 'absolute',
-    left: 0,
-    flexDirection: 'row',
-    width: SCREEN_WIDTH,
-  },
-  verticalLineContainer: {
-    position: 'absolute',
-    top: 0,
-    flexDirection: 'column',
-    height: SCREEN_HEIGHT,
-  },
-  horizontalPosition: {
-    // Dynamic top position will be applied inline
-  },
-  verticalPosition: {
-    // Dynamic left position will be applied inline
-  },
-  horizontalDash: {
-    width: 8,
-    height: 1,
-    backgroundColor: '#000000',
-  },
-  verticalDash: {
-    width: 1,
-    height: 8,
-    backgroundColor: '#000000',
-  },
-  horizontalDashMargin: {
-    marginLeft: 4,
-  },
-  verticalDashMargin: {
-    marginTop: 4,
   },
 });

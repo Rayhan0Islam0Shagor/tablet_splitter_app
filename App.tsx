@@ -11,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { TabletProvider } from './src/context/TabletContext';
 import { DrawArea } from './src/components/DrawArea';
+import { BottomActionBar } from './src/components/BottomActionBar';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -31,6 +32,7 @@ function AppContent() {
   return (
     <View style={styles.container}>
       <DrawArea />
+      <BottomActionBar />
     </View>
   );
 }

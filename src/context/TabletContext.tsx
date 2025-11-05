@@ -12,7 +12,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Tablet } from '../types/tablet.types';
-import { generateRandomColor } from '../utils/color.utils';
+import { generateUniqueColor } from '../utils/color.utils';
 import { DEFAULT_BORDER_RADIUS } from '../constants/tablet.constants';
 
 interface TabletContextType {
@@ -22,6 +22,7 @@ interface TabletContextType {
   removeTablet: (id: string) => void;
   splitTablets: (splitLines: { x?: number; y?: number }) => void;
   clearAllTablets: () => void;
+  bringToTop: (id: string) => void;
 }
 
 const TabletContext = createContext<TabletContextType | undefined>(undefined);
@@ -32,14 +33,22 @@ export const TabletProvider: React.FC<{ children: React.ReactNode }> = ({
   const [tablets, setTablets] = useState<Tablet[]>([]);
 
   const addTablet = useCallback((tabletData: Omit<Tablet, 'id' | 'color'>) => {
-    const newTablet: Tablet = {
-      ...tabletData,
-      id: `tablet_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-      color: generateRandomColor(),
-      borderRadius: tabletData.borderRadius ?? DEFAULT_BORDER_RADIUS,
-    };
+    setTablets(prev => {
+      // Get all currently used colors
+      const usedColors = prev.map(tablet => tablet.color);
 
-    setTablets(prev => [...prev, newTablet]);
+      // Generate a unique color that hasn't been used
+      const uniqueColor = generateUniqueColor(usedColors);
+
+      const newTablet: Tablet = {
+        ...tabletData,
+        id: `tablet_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        color: uniqueColor,
+        borderRadius: tabletData.borderRadius ?? DEFAULT_BORDER_RADIUS,
+      };
+
+      return [...prev, newTablet];
+    });
   }, []);
 
   const updateTablet = useCallback((id: string, updates: Partial<Tablet>) => {
@@ -63,6 +72,20 @@ export const TabletProvider: React.FC<{ children: React.ReactNode }> = ({
     setTablets([]);
   }, []);
 
+  const bringToTop = useCallback((id: string) => {
+    setTablets(prev => {
+      const tabletIndex = prev.findIndex(t => t.id === id);
+      if (tabletIndex === -1) return prev;
+
+      // Move the tablet to the end of the array (top z-index)
+      const newTablets = [...prev];
+      const [tablet] = newTablets.splice(tabletIndex, 1);
+      newTablets.push(tablet);
+
+      return newTablets;
+    });
+  }, []);
+
   const value: TabletContextType = {
     tablets,
     addTablet,
@@ -70,6 +93,7 @@ export const TabletProvider: React.FC<{ children: React.ReactNode }> = ({
     removeTablet,
     splitTablets,
     clearAllTablets,
+    bringToTop,
   };
 
   return (

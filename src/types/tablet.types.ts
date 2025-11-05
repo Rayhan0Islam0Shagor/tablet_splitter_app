@@ -1,10 +1,3 @@
-/**
- * STEP 2: Tablet Type Definitions
- *
- * This file defines the TypeScript interfaces and types for tablets.
- * Each tablet represents a box with rounded corners that can be split and moved.
- */
-
 export interface Tablet {
   id: string;
   x: number; // X coordinate position (top-left corner)
