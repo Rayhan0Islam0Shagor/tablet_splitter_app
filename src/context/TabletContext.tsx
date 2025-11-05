@@ -1,5 +1,5 @@
 /**
- * STEP 2: Tablet Context API Setup
+ * STEP 2 & 5: Tablet Context API Setup with Splitting
  *
  * This context manages the global state for all tablets in the application.
  * It provides methods to add, update, and split tablets.
@@ -8,12 +8,15 @@
  * - Centralized state management using React Context API
  * - Reusable hooks for accessing tablet state
  * - Functions to manipulate tablet data
+ * - Split tablets along horizontal and/or vertical lines
+ * - Split parts retain original color and corner radius
  */
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Tablet } from '../types/tablet.types';
 import { generateUniqueColor } from '../utils/color.utils';
 import { DEFAULT_BORDER_RADIUS } from '../constants/tablet.constants';
+import { tabletIntersectsSplitLines, splitTablet } from '../utils/tablet.utils';
 
 interface TabletContextType {
   tablets: Tablet[];
@@ -64,8 +67,64 @@ export const TabletProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const splitTablets = useCallback((splitLines: { x?: number; y?: number }) => {
-    // TODO: Implement splitting logic in next step
-    console.log('Split tablets at:', splitLines);
+    setTablets(prev => {
+      // Early return if no split lines
+      if (splitLines.x === undefined && splitLines.y === undefined) {
+        return prev;
+      }
+
+      const tabletsToSplit: Tablet[] = [];
+      const tabletsToKeep: Tablet[] = [];
+
+      // Split all tablets that intersect split lines
+      prev.forEach(tablet => {
+        if (tabletIntersectsSplitLines(tablet, splitLines)) {
+          tabletsToSplit.push(tablet);
+        } else {
+          tabletsToKeep.push(tablet);
+        }
+      });
+
+      // If no tablets to split, return unchanged
+      if (tabletsToSplit.length === 0) {
+        return prev;
+      }
+
+      // Split all tablets in the split list
+      const splitParts: Tablet[] = [];
+      // Generate unique IDs for each part using timestamp and counter
+      // Use a more precise timestamp with microsecond precision simulation
+      const baseTimestamp = Date.now();
+      let partCounter = 0; // Counter to ensure unique IDs across all splits
+
+      tabletsToSplit.forEach((tablet, tabletIndex) => {
+        const parts = splitTablet(tablet, splitLines);
+        // Generate unique IDs for each part
+        parts.forEach(part => {
+          // Create unique ID: timestamp + tabletIndex + partCounter + random string
+          // This ensures uniqueness even if multiple tablets are split simultaneously
+          const uniqueId = `split_${baseTimestamp}_${tabletIndex}_${partCounter++}_${Math.random()
+            .toString(36)
+            .slice(2, 15)}`;
+
+          splitParts.push({
+            ...part,
+            // Explicitly set all properties to avoid any ID pollution from split functions
+            id: uniqueId,
+            x: part.x,
+            y: part.y,
+            width: part.width,
+            height: part.height,
+            // Preserve original color and borderRadius from the tablet
+            color: tablet.color,
+            borderRadius: tablet.borderRadius,
+          });
+        });
+      });
+
+      // Combine kept tablets with split parts
+      return [...tabletsToKeep, ...splitParts];
+    });
   }, []);
 
   const clearAllTablets = useCallback(() => {

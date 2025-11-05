@@ -1,8 +1,11 @@
 /**
- * STEP 3: Integrate Draw Area Component
+ * STEP 5: Tablet Splitting Functionality
  *
- * This step integrates the DrawArea component that displays split lines
- * when the user presses or drags on the screen.
+ * This step implements the complete tablet splitting feature:
+ * - Single press/tap splits tablets intersecting split lines
+ * - Split parts retain original color and corner radius
+ * - Minimum part size enforcement (20x10 dpi)
+ * - Small parts are moved to one side of split line
  */
 
 import React from 'react';

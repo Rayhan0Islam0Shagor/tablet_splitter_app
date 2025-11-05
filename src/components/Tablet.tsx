@@ -1,5 +1,5 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { StyleSheet, Animated } from 'react-native';
 import { Tablet as TabletType } from '../types/tablet.types';
 
 interface TabletProps {
@@ -7,15 +7,47 @@ interface TabletProps {
   isDragging?: boolean;
 }
 
-export const Tablet: React.FC<TabletProps> = ({ tablet, isDragging = false }) => {
+export const Tablet: React.FC<TabletProps> = ({
+  tablet,
+  isDragging = false,
+}) => {
+  // Create animated values for position
+  const animatedX = useRef(new Animated.Value(tablet.x)).current;
+  const animatedY = useRef(new Animated.Value(tablet.y)).current;
+
+  // Update animated values when tablet position changes
+  useEffect(() => {
+    if (!isDragging) {
+      // Animate to new position when not dragging (smooth transition)
+      Animated.parallel([
+        Animated.spring(animatedX, {
+          toValue: tablet.x,
+          useNativeDriver: false, // Cannot use native driver for layout properties
+          tension: 50,
+          friction: 7,
+        }),
+        Animated.spring(animatedY, {
+          toValue: tablet.y,
+          useNativeDriver: false,
+          tension: 50,
+          friction: 7,
+        }),
+      ]).start();
+    } else {
+      // Update immediately during drag (no animation delay)
+      animatedX.setValue(tablet.x);
+      animatedY.setValue(tablet.y);
+    }
+  }, [tablet.x, tablet.y, isDragging, animatedX, animatedY]);
+
   return (
-    <View
+    <Animated.View
       style={[
         styles.tablet,
         isDragging && styles.draggingTablet,
         {
-          left: tablet.x,
-          top: tablet.y,
+          left: animatedX,
+          top: animatedY,
           width: tablet.width,
           height: tablet.height,
           backgroundColor: tablet.color,
@@ -24,7 +56,7 @@ export const Tablet: React.FC<TabletProps> = ({ tablet, isDragging = false }) =>
       ]}
     >
       {isDragging && (
-        <View
+        <Animated.View
           style={[
             styles.draggingOverlay,
             {
@@ -33,7 +65,7 @@ export const Tablet: React.FC<TabletProps> = ({ tablet, isDragging = false }) =>
           ]}
         />
       )}
-    </View>
+    </Animated.View>
   );
 };
 

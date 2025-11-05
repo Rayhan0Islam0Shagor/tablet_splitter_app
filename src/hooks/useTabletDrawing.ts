@@ -9,6 +9,7 @@ import {
   MIN_TABLET_WIDTH,
   MIN_TABLET_HEIGHT,
   DEFAULT_BORDER_RADIUS,
+  TAP_THRESHOLD,
 } from '../constants/tablet.constants';
 
 export interface PreviewTabletState {
@@ -24,7 +25,8 @@ export interface SplitLinesState {
 }
 
 export const useTabletDrawing = () => {
-  const { tablets, addTablet, updateTablet, bringToTop } = useTablets();
+  const { tablets, addTablet, updateTablet, bringToTop, splitTablets } =
+    useTablets();
 
   const [splitLines, setSplitLines] = useState<SplitLinesState | null>(null);
   const [previewTablet, setPreviewTablet] = useState<PreviewTabletState | null>(
@@ -40,19 +42,27 @@ export const useTabletDrawing = () => {
     startX: number;
     startY: number;
   } | null>(null);
+  const tappedTabletRef = useRef<string | null>(null);
+  const hasMovedRef = useRef<boolean>(false);
   const tabletsRef = useRef(tablets);
   const addTabletRef = useRef(addTablet);
   const updateTabletRef = useRef(updateTablet);
   const bringToTopRef = useRef(bringToTop);
+  const splitTabletsRef = useRef(splitTablets);
 
   // Update refs when values change
   tabletsRef.current = tablets;
   addTabletRef.current = addTablet;
   updateTabletRef.current = updateTablet;
   bringToTopRef.current = bringToTop;
+  splitTabletsRef.current = splitTablets;
 
   // Helper function to handle touch start
   const handleTouchStart = useCallback((touchX: number, touchY: number) => {
+    // Reset movement tracking
+    hasMovedRef.current = false;
+    tappedTabletRef.current = null;
+
     // Find tablet at touch point
     const tabletAtPoint = findTabletAtPoint(touchX, touchY, tabletsRef.current);
 
@@ -63,6 +73,7 @@ export const useTabletDrawing = () => {
         startX: tabletAtPoint.x,
         startY: tabletAtPoint.y,
       };
+      tappedTabletRef.current = tabletAtPoint.id; // Remember which tablet was tapped
       setDraggedTabletId(tabletAtPoint.id);
       dragStartRef.current = { x: touchX, y: touchY };
     } else {
@@ -85,17 +96,6 @@ export const useTabletDrawing = () => {
     });
   }, []);
 
-  // Tap gesture for immediate press detection
-  const tapGesture = useMemo(
-    () =>
-      Gesture.Tap().onTouchesDown(event => {
-        const touchX = event.allTouches[0].x;
-        const touchY = event.allTouches[0].y;
-        handleTouchStart(touchX, touchY);
-      }),
-    [handleTouchStart],
-  );
-
   // Pan gesture for dragging
   const panGesture = useMemo(
     () =>
@@ -107,6 +107,15 @@ export const useTabletDrawing = () => {
         .onUpdate(event => {
           const currentX = event.x;
           const currentY = event.y;
+
+          // Track if there was significant movement
+          if (dragStartRef.current) {
+            const deltaX = Math.abs(currentX - dragStartRef.current.x);
+            const deltaY = Math.abs(currentY - dragStartRef.current.y);
+            if (deltaX > TAP_THRESHOLD || deltaY > TAP_THRESHOLD) {
+              hasMovedRef.current = true;
+            }
+          }
 
           // Update split lines position during drag
           setSplitLines({
@@ -185,8 +194,8 @@ export const useTabletDrawing = () => {
             }
           }
 
-          // Bring dragged tablet to top if it was dragged
-          if (draggedTabletRef.current) {
+          // Bring dragged tablet to top if it was actually dragged (moved)
+          if (draggedTabletRef.current && hasMovedRef.current) {
             bringToTopRef.current(draggedTabletRef.current.id);
           }
 
@@ -197,6 +206,8 @@ export const useTabletDrawing = () => {
           dragStartRef.current = null;
           dragEndRef.current = null;
           draggedTabletRef.current = null;
+          tappedTabletRef.current = null;
+          hasMovedRef.current = false;
 
           // Hide split lines after a short delay
           setTimeout(() => {
@@ -211,11 +222,36 @@ export const useTabletDrawing = () => {
           dragStartRef.current = null;
           dragEndRef.current = null;
           draggedTabletRef.current = null;
+          tappedTabletRef.current = null;
+          hasMovedRef.current = false;
 
           // Ensure lines are hidden when gesture ends
           setTimeout(() => {
             setSplitLines(null);
           }, 300);
+        }),
+    [handleTouchStart],
+  );
+
+  // Tap gesture for immediate press detection and splitting
+  const tapGesture = useMemo(
+    () =>
+      Gesture.Tap()
+        .onTouchesDown(event => {
+          const touchX = event.allTouches[0].x;
+          const touchY = event.allTouches[0].y;
+          handleTouchStart(touchX, touchY);
+        })
+        .onEnd(() => {
+          // Split on tap if there was no significant movement
+          // Always split ALL tablets intersecting the split lines
+          if (!hasMovedRef.current && dragStartRef.current) {
+            // Split all tablets intersecting the split lines
+            splitTabletsRef.current({
+              x: dragStartRef.current.x,
+              y: dragStartRef.current.y,
+            });
+          }
         }),
     [handleTouchStart],
   );

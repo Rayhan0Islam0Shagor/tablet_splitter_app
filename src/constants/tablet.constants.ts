@@ -19,3 +19,8 @@ export const DEFAULT_BORDER_RADIUS = 12;
  * Threshold distance to distinguish between tap and drag
  */
 export const TAP_THRESHOLD = 10; // pixels
+
+/**
+ * Gap between split tablet parts (visual separation)
+ */
+export const SPLIT_GAP = 4; // pixels
