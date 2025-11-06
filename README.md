@@ -2,6 +2,8 @@
 
 A React Native application for creating, manipulating, and splitting tablet-shaped objects on a touch screen. Users can draw tablets by dragging, move them around, and split them along horizontal and vertical lines with a single tap.
 
+App Link: https://drive.google.com/file/d/1JicMJea9pRUnlymnmbT__pJEGsGE9Vek/view?usp=sharing
+
 ## 📱 Features
 
 ### Core Functionality
