@@ -72,10 +72,8 @@ export const Tablet: React.FC<TabletProps> = ({
 const styles = StyleSheet.create({
   tablet: {
     position: 'absolute',
-    overflow: 'hidden', // Ensure clean rounded corners
-    // Android elevation
+    overflow: 'hidden',
     elevation: 4,
-    // iOS shadow
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -85,9 +83,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   draggingTablet: {
-    // Enhanced elevation when dragging
     elevation: 12,
-    // Enhanced shadow for iOS
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

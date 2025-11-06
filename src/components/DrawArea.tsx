@@ -21,11 +21,7 @@ import { PreviewTablet } from './PreviewTablet';
 import { DashedLine } from './DashedLine';
 import { useTabletDrawing } from '../hooks/useTabletDrawing';
 
-interface DrawAreaProps {
-  // Future props will be added here
-}
-
-export const DrawArea: React.FC<DrawAreaProps> = () => {
+export const DrawArea: React.FC = () => {
   const { tablets } = useTablets();
   const { gesture, splitLines, previewTablet, draggedTabletId } =
     useTabletDrawing();
