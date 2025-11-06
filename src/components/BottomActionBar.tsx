@@ -4,6 +4,7 @@
  * Displays action buttons at the bottom of the screen for tablet management.
  */
 
+import React from 'react';
 import {
   StyleSheet,
   View,

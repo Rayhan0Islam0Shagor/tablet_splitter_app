@@ -199,6 +199,28 @@ export const useTabletDrawing = () => {
             bringToTopRef.current(draggedTabletRef.current.id);
           }
 
+          // Split tablets if there was no significant movement (fallback for release builds)
+          // This ensures splitting works even if tapGesture doesn't fire correctly
+          // Split if: no movement AND we have a start point AND we weren't drawing a new tablet
+          // because splitting should work when tapping on tablets too
+          if (
+            !hasMovedRef.current &&
+            dragStartRef.current &&
+            !isDrawingTabletRef.current &&
+            splitTabletsRef.current
+          ) {
+            // Only split if we weren't drawing a new tablet
+            try {
+              splitTabletsRef.current({
+                x: dragStartRef.current.x,
+                y: dragStartRef.current.y,
+              });
+            } catch (error) {
+              // Silently handle errors in release builds
+              console.warn('Split failed in pan gesture:', error);
+            }
+          }
+
           // Reset drawing state
           isDrawingTabletRef.current = false;
           setPreviewTablet(null);
@@ -245,12 +267,22 @@ export const useTabletDrawing = () => {
         .onEnd(() => {
           // Split on tap if there was no significant movement
           // Always split ALL tablets intersecting the split lines
-          if (!hasMovedRef.current && dragStartRef.current) {
-            // Split all tablets intersecting the split lines
-            splitTabletsRef.current({
-              x: dragStartRef.current.x,
-              y: dragStartRef.current.y,
-            });
+          // Ensure splitTabletsRef is available before calling
+          if (
+            !hasMovedRef.current &&
+            dragStartRef.current &&
+            splitTabletsRef.current
+          ) {
+            try {
+              // Split all tablets intersecting the split lines
+              splitTabletsRef.current({
+                x: dragStartRef.current.x,
+                y: dragStartRef.current.y,
+              });
+            } catch (error) {
+              // Handle errors gracefully in release builds
+              console.warn('Split failed in tap gesture:', error);
+            }
           }
         }),
     [handleTouchStart],

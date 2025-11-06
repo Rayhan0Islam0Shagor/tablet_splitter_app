@@ -12,6 +12,7 @@
  * - Display split lines during press/drag
  */
 
+import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import { useTablets } from '../context/TabletContext';

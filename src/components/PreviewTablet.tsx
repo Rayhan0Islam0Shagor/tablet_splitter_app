@@ -1,3 +1,4 @@
+import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { DEFAULT_BORDER_RADIUS } from '../constants/tablet.constants';
 

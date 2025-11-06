@@ -280,16 +280,12 @@ export const splitTablet = (
   const hasHorizontal = splitLines.y !== undefined;
 
   if (hasVertical && hasHorizontal) {
-    // Split both ways
-    return splitTabletBothWays(tablet, splitLines.x!, splitLines.y!);
+    return splitTabletBothWays(tablet, splitLines.x!, splitLines.y!); // Split both ways
   } else if (hasVertical) {
-    // Split vertically only
     return splitTabletVertically(tablet, splitLines.x!);
   } else if (hasHorizontal) {
-    // Split horizontally only
     return splitTabletHorizontally(tablet, splitLines.y!);
   }
 
-  // No split lines, return original
   return [tablet];
 };
